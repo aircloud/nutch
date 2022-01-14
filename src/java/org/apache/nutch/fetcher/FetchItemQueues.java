@@ -235,23 +235,42 @@ public class FetchItemQueues {
    * Increment the exception counter of a queue in case of an exception e.g.
    * timeout; when higher than a given threshold simply empty the queue.
    * 
-   * @param queueid a queue identifier to locate and check 
+   * The next fetch is delayed if specified by the param {@code delay} or
+   * configured by the property {@code fetcher.exceptions.per.queue.delay}.
+   * 
+   * @param queueid
+   *          a queue identifier to locate and check
+   * @param maxExceptions
+   *          custom-defined number of max. exceptions - if negative the value
+   *          of the property {@code fetcher.max.exceptions.per.queue} is used.
+   * @param delay
+   *          a custom-defined time span in milliseconds to delay the next fetch
+   *          in addition to the delay defined for the given queue. If a
+   *          negative value is passed the delay is chosen by
+   *          {@code fetcher.exceptions.per.queue.delay}
+   * 
    * @return number of purged items
    */
-  public synchronized int checkExceptionThreshold(String queueid) {
+  public synchronized int checkExceptionThreshold(String queueid,
+      int maxExceptions, long delay) {
     FetchItemQueue fiq = queues.get(queueid);
     if (fiq == null) {
       return 0;
     }
     int excCount = fiq.incrementExceptionCounter();
+    if (delay > 0) {
+      fiq.nextFetchTime.getAndAdd(delay);
+      LOG.info("* queue: {} >> delayed next fetch by {} ms", queueid, delay);
+    }
     if (fiq.getQueueSize() == 0) {
       return 0;
     }
-    if (maxExceptionsPerQueue != -1 && excCount >= maxExceptionsPerQueue) {
+    if (maxExceptions!= -1 && excCount >= maxExceptions) {
       // too many exceptions for items in this queue - purge it
       int deleted = fiq.emptyQueue();
-      LOG.info("* queue: " + queueid + " >> removed " + deleted
-          + " URLs from queue because " + excCount + " exceptions occurred");
+      LOG.info(
+          "* queue: {} >> removed {} URLs from queue because {} exceptions occurred",
+          queueid, deleted, excCount);
       for (int i = 0; i < deleted; i++) {
         totalSize.decrementAndGet();
       }
@@ -261,6 +280,10 @@ public class FetchItemQueues {
       return deleted;
     }
     return 0;
+  }
+
+  public int checkExceptionThreshold(String queueid) {
+    return checkExceptionThreshold(queueid, this.maxExceptionsPerQueue, -1);
   }
 
   /**

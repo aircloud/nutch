@@ -148,6 +148,8 @@ public class FetcherThread extends Thread {
   private boolean robotsTxtArchivingFilterMime = false;
   private boolean robotsTxtArchivingCheckRobotsTxt = false;
   private Set<String> robotsTxtArchivingAcceptedMimeTypes = new HashSet<>();
+  private long robotsDeferVisitsDelay;
+  private int robotsDeferVisitsRetries;
 
   //Used by the REST service
   private FetchNode fetchNode;
@@ -203,6 +205,14 @@ public class FetcherThread extends Thread {
       if (conf.getBoolean("parse.normalize.urls", true))
         this.normalizersForOutlinks = new URLNormalizers(conf,
             URLNormalizers.SCOPE_OUTLINK);
+    }
+
+    // NUTCH-2573 defer visits if robots.txt fails with HTTP 5xx
+    if (conf.getBoolean("http.robots.503.defer.visits", true)) {
+      this.robotsDeferVisitsDelay = conf
+          .getLong("http.robots.503.defer.visits.delay", 5 * 60 * 1000L);
+      this.robotsDeferVisitsRetries = conf
+          .getInt("http.robots.503.defer.visits.retries", 3);
     }
 
     if((activatePublisher=conf.getBoolean("fetcher.publisher", false)))
@@ -332,6 +342,19 @@ public class FetcherThread extends Thread {
             if (robotsTxtContent != null) {
               outputRobotsTxt(robotsTxtContent);
               robotsTxtContent.clear();
+            }
+            if (rules.isDeferVisits()) {
+              int killedURLs = ((FetchItemQueues) fetchQueues)
+                  .checkExceptionThreshold(fit.getQueueID(),
+                      this.robotsDeferVisitsRetries + 1,
+                      this.robotsDeferVisitsDelay);
+              if (killedURLs != 0) {
+                context.getCounter("FetcherStatus",
+                    "DroppedRobotsTxtDeferVisits").increment(killedURLs);
+              } else {
+                // keep fetch item for next trial
+                ((FetchItemQueues) fetchQueues).addFetchItem(fit);
+              }
             }
             if (!rules.isAllowed(fit.url.toString())) {
               // unblock
