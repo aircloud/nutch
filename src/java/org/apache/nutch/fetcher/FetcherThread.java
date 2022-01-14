@@ -344,17 +344,21 @@ public class FetcherThread extends Thread {
               robotsTxtContent.clear();
             }
             if (rules.isDeferVisits()) {
-              int killedURLs = ((FetchItemQueues) fetchQueues)
-                  .checkExceptionThreshold(fit.getQueueID(),
-                      this.robotsDeferVisitsRetries + 1,
-                      this.robotsDeferVisitsDelay);
+              // retry the fetch item
+              if (fetchQueues.timelimitReached()) {
+                fetchQueues.finishFetchItem(fit, true);
+              } else {
+                fetchQueues.addFetchItem(fit);
+              }
+              // but check whether it's time to cancel the queue
+              int killedURLs = fetchQueues.checkExceptionThreshold(
+                  fit.getQueueID(), this.robotsDeferVisitsRetries + 1,
+                  this.robotsDeferVisitsDelay);
               if (killedURLs != 0) {
                 context.getCounter("FetcherStatus",
                     "DroppedRobotsTxtDeferVisits").increment(killedURLs);
-              } else {
-                // keep fetch item for next trial
-                ((FetchItemQueues) fetchQueues).addFetchItem(fit);
               }
+              continue;
             }
             if (!rules.isAllowed(fit.url.toString())) {
               // unblock
@@ -643,6 +647,11 @@ public class FetcherThread extends Thread {
       context.getCounter("FetcherStatus", "redirect_deduplicated").increment(1);
       LOG.debug(" - ignoring redirect from {} to {} as duplicate", fit.url,
           redirUrl);
+      return null;
+    } else if (fetchQueues.timelimitReached()) {
+      context.getCounter("FetcherStatus", "hitByTimelimit").increment(1);
+      LOG.debug(" - ignoring redirect from {} to {} - timelimit reached",
+          fit.url, redirUrl);
       return null;
     }
     CrawlDatum newDatum = createRedirDatum(redirUrl, fit, CrawlDatum.STATUS_DB_UNFETCHED);

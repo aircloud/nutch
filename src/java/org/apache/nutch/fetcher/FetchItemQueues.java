@@ -198,11 +198,15 @@ public class FetchItemQueues {
     return null;
   }
 
+  public boolean timelimitReached() {
+    return timelimit != -1 && System.currentTimeMillis() >= timelimit;
+  }
+
   // called only once the feeder has stopped
   public synchronized int checkTimelimit() {
     int count = 0;
 
-    if (System.currentTimeMillis() >= timelimit && timelimit != -1) {
+    if (timelimitReached()) {
       // emptying the queues
       count = emptyQueues();
 
@@ -223,11 +227,9 @@ public class FetchItemQueues {
       FetchItemQueue fiq = queues.get(id);
       if (fiq.getQueueSize() == 0)
         continue;
-      LOG.info("* queue: " + id + " >> dropping! ");
+      LOG.info("* queue: {} >> dropping!", id);
       int deleted = fiq.emptyQueue();
-      for (int i = 0; i < deleted; i++) {
-        totalSize.decrementAndGet();
-      }
+      totalSize.addAndGet(-deleted);
       count += deleted;
     }
 
