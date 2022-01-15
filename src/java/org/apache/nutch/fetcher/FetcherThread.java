@@ -344,8 +344,7 @@ public class FetcherThread extends Thread {
               robotsTxtContent.clear();
             }
             if (rules.isDeferVisits()) {
-              LOG.info("Defer visits for queue {} (retrying {} later)",
-                  fit.queueID, fit.url);
+              LOG.info("Defer visits for queue {} : {}", fit.queueID, fit.url);
               // retry the fetch item
               if (fetchQueues.timelimitReached()) {
                 fetchQueues.finishFetchItem(fit, true);
