@@ -344,6 +344,8 @@ public class FetcherThread extends Thread {
               robotsTxtContent.clear();
             }
             if (rules.isDeferVisits()) {
+              LOG.info("Defer visits for queue {} (retrying {} later)",
+                  fit.queueID, fit.url);
               // retry the fetch item
               if (fetchQueues.timelimitReached()) {
                 fetchQueues.finishFetchItem(fit, true);
@@ -649,6 +651,7 @@ public class FetcherThread extends Thread {
           redirUrl);
       return null;
     } else if (fetchQueues.timelimitReached()) {
+      redirecting = false;
       context.getCounter("FetcherStatus", "hitByTimeLimit").increment(1);
       LOG.debug(" - ignoring redirect from {} to {} - timelimit reached",
           fit.url, redirUrl);
