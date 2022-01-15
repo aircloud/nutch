@@ -649,7 +649,7 @@ public class FetcherThread extends Thread {
           redirUrl);
       return null;
     } else if (fetchQueues.timelimitReached()) {
-      context.getCounter("FetcherStatus", "hitByTimelimit").increment(1);
+      context.getCounter("FetcherStatus", "hitByTimeLimit").increment(1);
       LOG.debug(" - ignoring redirect from {} to {} - timelimit reached",
           fit.url, redirUrl);
       return null;
