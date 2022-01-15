@@ -216,6 +216,7 @@ public class FetchItemQueues {
       if (totalSize.get() != 0 && queues.size() == 0)
         totalSize.set(0);
     }
+
     return count;
   }
 

@@ -837,8 +837,10 @@ public class FetcherThread extends Thread {
             reportEvent.addEventData(Nutch.FETCH_EVENT_CONTENTLANG, parseData.getContentMeta().get("content-language"));
             publisher.publish(reportEvent, conf);
           }
+
           // Only process depth N outlinks
-          if (maxOutlinkDepth > 0 && outlinkDepth < maxOutlinkDepth) {
+          if (maxOutlinkDepth > 0 && outlinkDepth < maxOutlinkDepth
+              && !fetchQueues.timelimitReached()) {
             FetchItem ft = FetchItem.create(url, null, queueMode);
             FetchItemQueue queue = fetchQueues.getFetchItemQueue(ft.queueID);
             queue.alreadyFetched.add(url.toString().hashCode());
