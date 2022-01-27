@@ -155,6 +155,8 @@ public class QueueFeeder extends Thread {
         }
       }
     }
+    // signal queues that no new fetch items will be added
+    queues.feederAlive = false;
     LOG.info("QueueFeeder finished: total {} records", cnt);
     LOG.info("QueueFeeder queuing status:");
     for (QueuingStatus status : QueuingStatus.values()) {
