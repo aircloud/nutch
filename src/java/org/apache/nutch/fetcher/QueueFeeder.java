@@ -89,7 +89,7 @@ public class QueueFeeder extends Thread {
     int cnt = 0;
     int[] queuingStatus = new int[QueuingStatus.values().length];
     while (hasMore) {
-      if (System.currentTimeMillis() >= timelimit && timelimit != -1) {
+      if (timelimit != -1 && System.currentTimeMillis() >= timelimit) {
         // enough ... lets' simply read all the entries from the input without
         // processing them
         try {

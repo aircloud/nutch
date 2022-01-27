@@ -181,11 +181,20 @@ public class FetchItemQueues {
     while (it.hasNext()) {
       FetchItemQueue fiq = it.next().getValue();
 
-      // reap empty queues
+      // reap empty queues which do not hold state required to ensure politeness
       if (fiq.getQueueSize() == 0 && fiq.getInProgressSize() == 0) {
-        it.remove();
+        if (maxExceptionsPerQueue > -1 && fiq.exceptionCounter.get() > 0) {
+          // keep queue because the exceptions counter is bound to it
+        } else if (fiq.nextFetchTime.get() > System.currentTimeMillis()) {
+          // keep queue to have it blocked in case new fetch items of this queue
+          // are added by the QueeFeeder
+        } else {
+          // empty queue without state
+          it.remove();
+        }
         continue;
       }
+
       FetchItem fit = fiq.getFetchItem();
       if (fit != null) {
         totalSize.decrementAndGet();
