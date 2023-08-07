@@ -123,6 +123,8 @@
 
 		<dependency org="de.vandermeer" name="asciitable" rev="0.3.2" />
 
+		<dependency org="com.github.luben" name="zstd-jni" rev="1.5.5-5"/>
+
 		<!--global exclusion -->
 		<exclude module="jmxtools" />
 		<exclude module="jms" />

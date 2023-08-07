@@ -177,7 +177,8 @@ class WarcRecordWriter extends RecordWriter<Text, WarcCapture> {
         crawlDiagnosticsCdxOut = openCdxOutputStream(
             new Path(cdxPath, "crawldiagnostics"), filename, conf);
       }
-      crawlDiagnosticsWarcWriter = openWarcWriter(crawlDiagnosticsWarcPath, crawlDiagnosticsWarcOut,crawlDiagnosticsCdxOut);
+      crawlDiagnosticsWarcWriter = openWarcWriter(crawlDiagnosticsWarcPath, crawlDiagnosticsWarcOut,
+          crawlDiagnosticsCdxOut);
       crawlDiagnosticsWarcinfoId = crawlDiagnosticsWarcWriter
           .writeWarcinfoRecord(filename, hostname, publisher, operator,
               software, isPartOf, description, captureStartDate);
@@ -223,15 +224,15 @@ class WarcRecordWriter extends RecordWriter<Text, WarcCapture> {
    * 1.1, Annex C</a>)
    * 
    * @param prefix
-   *          WARC file name prefix
+   *                  WARC file name prefix
    * @param startDate
-   *          capture start date
+   *                  capture start date
    * @param endDate
-   *          capture end date
+   *                  capture end date
    * @param hostname
-   *          name of the crawling host
+   *                  name of the crawling host
    * @param partition
-   *          MapReduce partition
+   *                  MapReduce partition
    * @return (unique) WARC file name
    */
   protected String getFileName(String prefix, String startDate, String endDate,
@@ -240,7 +241,7 @@ class WarcRecordWriter extends RecordWriter<Text, WarcCapture> {
     numberFormat.setMinimumIntegerDigits(5);
     numberFormat.setGroupingUsed(false);
     return prefix + "-" + startDate + "-" + endDate + "-"
-        + numberFormat.format(partition) + ".warc.gz";
+        + numberFormat.format(partition) + ".warc.zst";
   }
 
   protected String getSha1DigestWithAlg(byte[] bytes) {
@@ -297,12 +298,12 @@ class WarcRecordWriter extends RecordWriter<Text, WarcCapture> {
    * returned header end with a single empty line (<code>\r\n\r\n</code>).
    * 
    * @param headers
-   *          HTTP 1.1 or 1.0 response header string, CR-LF-separated lines,
-   *          first line is status line
+   *                HTTP 1.1 or 1.0 response header string, CR-LF-separated lines,
+   *                first line is status line
    * @return safe HTTP response header
    */
   public static String fixHttpHeaders(String headers, int contentLength) {
-    int start = 0, lineEnd = 0, last = 0, trailingCrLf= 0;
+    int start = 0, lineEnd = 0, last = 0, trailingCrLf = 0;
     boolean hasContentLength = false;
     StringBuilder replace = new StringBuilder();
     while (start < headers.length()) {
@@ -573,35 +574,35 @@ class WarcRecordWriter extends RecordWriter<Text, WarcCapture> {
         return;
       }
       switch (pstatus.getCode()) {
-      case ProtocolStatus.SUCCESS:
-        statusLine = "HTTP/1.1 200 OK";
-        httpStatusCode = 200;
-        break;
-      case ProtocolStatus.TEMP_MOVED:
-        statusLine = "HTTP/1.1 302 Found";
-        httpStatusCode = 302;
-        break;
-      case ProtocolStatus.MOVED:
-        statusLine = "HTTP/1.1 301 Moved Permanently";
-        httpStatusCode = 301;
-        break;
-      case ProtocolStatus.NOTMODIFIED:
-        statusLine = "HTTP/1.1 304 Not Modified";
-        httpStatusCode = 304;
-        notModified = true;
-        long modifiedTime = value.datum.getModifiedTime();
-        if (modifiedTime > 0) {
-          lastModifiedDate = new Date(modifiedTime);
-        }
-        break;
-      default:
-        if (value.content.getMetadata()
-            .get(Response.RESPONSE_HEADERS) == null) {
-          LOG.warn("Unknown or ambiguous protocol status: {}", pstatus);
-          context.getCounter(WARC_WRITER_COUNTER_GROUP,
-              "skipped records (unknown protocol status)").increment(1);
-          return;
-        }
+        case ProtocolStatus.SUCCESS:
+          statusLine = "HTTP/1.1 200 OK";
+          httpStatusCode = 200;
+          break;
+        case ProtocolStatus.TEMP_MOVED:
+          statusLine = "HTTP/1.1 302 Found";
+          httpStatusCode = 302;
+          break;
+        case ProtocolStatus.MOVED:
+          statusLine = "HTTP/1.1 301 Moved Permanently";
+          httpStatusCode = 301;
+          break;
+        case ProtocolStatus.NOTMODIFIED:
+          statusLine = "HTTP/1.1 304 Not Modified";
+          httpStatusCode = 304;
+          notModified = true;
+          long modifiedTime = value.datum.getModifiedTime();
+          if (modifiedTime > 0) {
+            lastModifiedDate = new Date(modifiedTime);
+          }
+          break;
+        default:
+          if (value.content.getMetadata()
+              .get(Response.RESPONSE_HEADERS) == null) {
+            LOG.warn("Unknown or ambiguous protocol status: {}", pstatus);
+            context.getCounter(WARC_WRITER_COUNTER_GROUP,
+                "skipped records (unknown protocol status)").increment(1);
+            return;
+          }
       }
       String httpStatusCodeVal = value.datum.getMetaData()
           .get(Nutch.PROTOCOL_STATUS_CODE_KEY).toString();
@@ -649,61 +650,61 @@ class WarcRecordWriter extends RecordWriter<Text, WarcCapture> {
     for (String name : value.content.getMetadata().names()) {
       String val = value.content.getMetadata().get(name);
       switch (name) {
-      case Response.IP_ADDRESS:
-        ip = val;
-        break;
-      case Response.REQUEST:
-        verbatimRequestHeaders = val;
-        break;
-      case Response.RESPONSE_HEADERS:
-        verbatimResponseHeaders = val;
-        if (verbatimResponseHeaders.contains(CRLF)) {
-          useVerbatimResponseHeaders = true;
-        }
-        statusLine = getStatusLine(verbatimResponseHeaders);
-        httpStatusCode = getStatusCode(statusLine);
-        break;
-      case Response.TRUNCATED_CONTENT_REASON:
-        truncatedReason = val;
-        break;
-      case Nutch.SEGMENT_NAME_KEY:
-      case Nutch.FETCH_STATUS_KEY:
-      case Nutch.SCORE_KEY:
-      case Nutch.SIGNATURE_KEY:
-      case Response.FETCH_TIME:
-        break; // ignore, not required for WARC record
-      default:
-        // We have to fix up a few headers because we don't have the raw
-        // responses to avoid that WARC readers try to read the content
-        // as chunked or gzip-compressed.
-        if (name.equalsIgnoreCase(Response.CONTENT_LENGTH)) {
-          int origContentLength = -1;
-          try {
-            origContentLength = Integer.parseInt(val);
-          } catch (NumberFormatException e) {
-            // ignore
+        case Response.IP_ADDRESS:
+          ip = val;
+          break;
+        case Response.REQUEST:
+          verbatimRequestHeaders = val;
+          break;
+        case Response.RESPONSE_HEADERS:
+          verbatimResponseHeaders = val;
+          if (verbatimResponseHeaders.contains(CRLF)) {
+            useVerbatimResponseHeaders = true;
           }
-          headers.add(Response.CONTENT_LENGTH);
-          if (origContentLength != value.content.getContent().length) {
-            headers.add("" + value.content.getContent().length);
-            headers.add(X_HIDE_HEADER + Response.CONTENT_LENGTH);
-          }
-        } else if (name.equalsIgnoreCase(Response.CONTENT_ENCODING)) {
-          if (val.equalsIgnoreCase("identity")) {
-            headers.add(name);
+          statusLine = getStatusLine(verbatimResponseHeaders);
+          httpStatusCode = getStatusCode(statusLine);
+          break;
+        case Response.TRUNCATED_CONTENT_REASON:
+          truncatedReason = val;
+          break;
+        case Nutch.SEGMENT_NAME_KEY:
+        case Nutch.FETCH_STATUS_KEY:
+        case Nutch.SCORE_KEY:
+        case Nutch.SIGNATURE_KEY:
+        case Response.FETCH_TIME:
+          break; // ignore, not required for WARC record
+        default:
+          // We have to fix up a few headers because we don't have the raw
+          // responses to avoid that WARC readers try to read the content
+          // as chunked or gzip-compressed.
+          if (name.equalsIgnoreCase(Response.CONTENT_LENGTH)) {
+            int origContentLength = -1;
+            try {
+              origContentLength = Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+              // ignore
+            }
+            headers.add(Response.CONTENT_LENGTH);
+            if (origContentLength != value.content.getContent().length) {
+              headers.add("" + value.content.getContent().length);
+              headers.add(X_HIDE_HEADER + Response.CONTENT_LENGTH);
+            }
+          } else if (name.equalsIgnoreCase(Response.CONTENT_ENCODING)) {
+            if (val.equalsIgnoreCase("identity")) {
+              headers.add(name);
+            } else {
+              headers.add(X_HIDE_HEADER + Response.CONTENT_ENCODING);
+            }
+          } else if (name.equalsIgnoreCase(Response.TRANSFER_ENCODING)) {
+            if (val.equalsIgnoreCase("identity")) {
+              headers.add(name);
+            } else {
+              headers.add(X_HIDE_HEADER + Response.TRANSFER_ENCODING);
+            }
           } else {
-            headers.add(X_HIDE_HEADER + Response.CONTENT_ENCODING);
-          }
-        } else if (name.equalsIgnoreCase(Response.TRANSFER_ENCODING)) {
-          if (val.equalsIgnoreCase("identity")) {
             headers.add(name);
-          } else {
-            headers.add(X_HIDE_HEADER + Response.TRANSFER_ENCODING);
           }
-        } else {
-          headers.add(name);
-        }
-        headers.add(val);
+          headers.add(val);
       }
     }
 
@@ -855,22 +856,32 @@ class WarcRecordWriter extends RecordWriter<Text, WarcCapture> {
   @Override
   public synchronized void close(TaskAttemptContext context)
       throws IOException {
-    context.setStatus("closing WARC output writers");
-    warcOut.close();
-    if (generateCrawlDiagnostics) {
-      crawlDiagnosticsWarcOut.close();
-    }
-    if (generateRobotsTxt) {
-      robotsTxtWarcOut.close();
-    }
-    if (generateCdx) {
-      cdxOut.close();
+    try {
+      LOG.info("before WarcRecordWriter close");
+      context.setStatus("closing WARC output writers");
+      warcWriter.close();
+      warcOut.close();
       if (generateCrawlDiagnostics) {
-        crawlDiagnosticsCdxOut.close();
+        crawlDiagnosticsWarcWriter.close();
+        crawlDiagnosticsWarcOut.close();
       }
       if (generateRobotsTxt) {
-        robotsTxtCdxOut.close();
+        robotsTxtWarcWriter.close();
+        robotsTxtWarcOut.close();
       }
+      if (generateCdx) {
+        cdxOut.close();
+        if (generateCrawlDiagnostics) {
+          crawlDiagnosticsCdxOut.close();
+        }
+        if (generateRobotsTxt) {
+          robotsTxtCdxOut.close();
+        }
+      }
+      LOG.info("after WarcRecordWriter close");
+    } catch (Throwable t) { // 捕获所有Throwable
+      LOG.info("An error or exception occurred");
+      t.printStackTrace();
     }
   }
 }

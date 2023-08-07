@@ -16,10 +16,13 @@
  */
 package org.commoncrawl.util;
 
+import com.github.luben.zstd.ZstdOutputStream;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +34,8 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.nutch.metadata.Metadata;
 import org.apache.nutch.protocol.Content;
 
@@ -39,7 +43,12 @@ public class WarcWriter {
   protected OutputStream out = null;
   protected OutputStream origOut = null;
 
+  private static final Logger LOG = LoggerFactory
+      .getLogger(MethodHandles.lookup().lookupClass());
+
   private static final String WARC_VERSION = "WARC/1.0";
+  private boolean outConverted = false;
+  private boolean enableShareCompressFrame = true; // 是否开启共享压缩帧
 
   // Record types
   private static final String WARC_INFO = "warcinfo";
@@ -82,13 +91,22 @@ public class WarcWriter {
 
   private SimpleDateFormat isoDate;
 
-  public static class CompressedOutputStream extends GZIPOutputStream {
-    public CompressedOutputStream(OutputStream out) throws IOException {
-      super(out);
+  public static class CompressedOutputStream extends ZstdOutputStream {
+    public CompressedOutputStream(OutputStream out, boolean closeOnFlush) throws IOException {
+      // 第三个参数为 true 表示每次 flush 之后结束当前压缩帧，这样不用手动在最后调用 close 了
+      // super(out, 3, true);
+      super(out, 3, closeOnFlush);
     }
+  }
 
-    public void end() {
-      def.end();
+  public void close() throws IOException {
+    if (this.enableShareCompressFrame && this.outConverted) {
+      try {
+        this.out.close();
+      } catch (Throwable t) { // 捕获所有Throwable
+        LOG.error("An error or exception occurred");
+        t.printStackTrace();
+      }
     }
   }
 
@@ -326,16 +344,24 @@ public class WarcWriter {
   }
 
   protected void startRecord() throws IOException {
-    this.out = new CompressedOutputStream(this.origOut);
+    if (!this.enableShareCompressFrame) {
+      // 不共享压缩帧的情况下，每次都新开一个 out
+      this.out = new CompressedOutputStream(this.origOut, !this.enableShareCompressFrame);
+    } else {
+      // 共享压缩帧，只转换一次即可
+      if (this.outConverted == false) {
+        this.outConverted = true;
+        this.out = new CompressedOutputStream(this.origOut, !this.enableShareCompressFrame);
+      }
+    }
   }
 
   protected void endRecord() throws IOException {
     CompressedOutputStream compressedOut = (CompressedOutputStream) this.out;
-    compressedOut.finish();
     compressedOut.flush();
-    compressedOut.end();
-
-    this.out = this.origOut;
+    if (!this.enableShareCompressFrame) {
+      this.out = this.origOut;
+    }
   }
 
   protected long copyStream(InputStream input, OutputStream output,
