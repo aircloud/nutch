@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.codec.binary.Base32;
 import org.apache.hadoop.conf.Configuration;
@@ -58,6 +57,7 @@ import org.apache.nutch.net.protocols.Response;
 import org.apache.nutch.protocol.ProtocolStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.github.luben.zstd.ZstdOutputStream;
 
 class WarcRecordWriter extends RecordWriter<Text, WarcCapture> {
 
@@ -423,10 +423,10 @@ class WarcRecordWriter extends RecordWriter<Text, WarcCapture> {
 
   protected static DataOutputStream openCdxOutputStream(Path cdxPath,
       String warcFilename, Configuration conf) throws IOException {
-    String cdxFilename = warcFilename.replaceFirst("\\.warc\\.gz$", ".cdx.gz");
+    String cdxFilename = warcFilename.replaceFirst("\\.warc\\.zst$", ".cdx.zst");
     Path cdxFile = new Path(cdxPath, cdxFilename);
     FileSystem fs = cdxPath.getFileSystem(conf);
-    return new DataOutputStream(new GZIPOutputStream(fs.create(cdxFile)));
+    return new DataOutputStream(new ZstdOutputStream(fs.create(cdxFile)));
   }
 
   @Override

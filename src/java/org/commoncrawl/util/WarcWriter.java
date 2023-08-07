@@ -16,8 +16,6 @@
  */
 package org.commoncrawl.util;
 
-import com.github.luben.zstd.ZstdOutputStream;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.nutch.metadata.Metadata;
 import org.apache.nutch.protocol.Content;
+import com.github.luben.zstd.ZstdOutputStream;
 
 public class WarcWriter {
   protected OutputStream out = null;
