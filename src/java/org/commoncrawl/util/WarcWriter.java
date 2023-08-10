@@ -93,8 +93,7 @@ public class WarcWriter {
   public static class CompressedOutputStream extends ZstdOutputStream {
     public CompressedOutputStream(OutputStream out, boolean closeOnFlush) throws IOException {
       // 第三个参数为 true 表示每次 flush 之后结束当前压缩帧，这样不用手动在最后调用 close 了
-      // super(out, 3, true);
-      super(out, 3, closeOnFlush);
+      super(out, 5, closeOnFlush);
     }
   }
 
