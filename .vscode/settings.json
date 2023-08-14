@@ -1,0 +1,6 @@
+{
+  "editor.formatOnSave": false,
+  "[java]": {
+    "editor.formatOnSave": false,
+  },
+}

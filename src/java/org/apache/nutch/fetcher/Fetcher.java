@@ -266,6 +266,8 @@ public class Fetcher extends NutchTool implements Tool {
 
         int targetBandwidth = conf.getInt("fetcher.bandwidth.target", -1)
             * 1000;
+
+        LOG.info("fetcher targetBandwidth: {}", targetBandwidth);
         int maxNumThreads = conf.getInt("fetcher.maxNum.threads", threadCount);
         if (maxNumThreads < threadCount) {
           LOG.info(
@@ -343,6 +345,8 @@ public class Fetcher extends NutchTool implements Tool {
 
           // adjust the number of threads if a target bandwidth has been set
           if (targetBandwidth > 0) {
+            LOG.info("bandwidthTargetCheckCounter: {}, bandwidthTargetCheckEveryNSecs: {}",
+                bandwidthTargetCheckCounter, bandwidthTargetCheckEveryNSecs);
             if (bandwidthTargetCheckCounter < bandwidthTargetCheckEveryNSecs)
               bandwidthTargetCheckCounter++;
             else if (bandwidthTargetCheckCounter == bandwidthTargetCheckEveryNSecs) {
@@ -357,7 +361,8 @@ public class Fetcher extends NutchTool implements Tool {
                 averageBdwPerThread = (int) (bpsSinceLastCheck
                     / activeThreads.get());
 
-              LOG.info("averageBdwPerThread : {} kbps",
+              LOG.info("bpsSinceLastCheck: {}, averageBdwPerThread : {} kbps",
+                  (bpsSinceLastCheck / 1000),
                   (averageBdwPerThread / 1000));
 
               if (bpsSinceLastCheck < targetBandwidth
