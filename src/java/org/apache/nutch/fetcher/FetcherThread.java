@@ -293,7 +293,10 @@ public class FetcherThread extends Thread {
           return;
         }
 
+        LOG.info("{} {} before getFetchItem DEBUG XXX1", getName(), Thread.currentThread().getId());
         fit = fetchQueues.getFetchItem();
+        LOG.info("{} {} after getFetchItem DEBUG XXX1, url: {}", getName(), Thread.currentThread().getId(), fit.url);
+
         if (fit == null) {
           if (feeder.isAlive() || fetchQueues.getTotalSize() > 0) {
             LOG.debug("{} spin-waiting ...", getName());
@@ -475,6 +478,7 @@ public class FetcherThread extends Thread {
               break;
 
             case ProtocolStatus.EXCEPTION:
+              LOG.info("{} {} logError DEBUG XXX1", getName(), Thread.currentThread().getId());
               logError(fit.url, status.getMessage());
               int killedURLs = fetchQueues
                   .checkExceptionThreshold(fit.getQueueID());
@@ -542,6 +546,7 @@ public class FetcherThread extends Thread {
           } else {
             message = StringUtils.stringifyException(t);
           }
+          LOG.info("{} {} logError DEBUG XXX2", getName(), Thread.currentThread().getId());
           logError(fit.url, message);
           output(fit.url, fit.datum, null, ProtocolStatus.STATUS_FAILED,
               CrawlDatum.STATUS_FETCH_RETRY);
@@ -549,6 +554,8 @@ public class FetcherThread extends Thread {
       }
 
     } catch (Throwable e) {
+      LOG.info("{} {} thread {}, activeThreads={}, DEBUGXXX outer throw error", getName(),
+        Thread.currentThread().getId(), getName(), activeThreads);
       if (LOG.isErrorEnabled()) {
         LOG.error("fetcher caught:", e);
       }
