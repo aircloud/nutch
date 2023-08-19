@@ -113,7 +113,7 @@ public class QueueFeeder extends Thread {
         }
         continue;
       }
-      LOG.debug("-feeding {} input urls ...", feed);
+      LOG.info("-feeding {} input urls ...", feed);
       while (feed > 0 && hasMore) {
         try {
           hasMore = context.nextKeyValue();

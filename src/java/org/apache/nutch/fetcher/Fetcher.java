@@ -226,6 +226,7 @@ public class Fetcher extends NutchTool implements Tool {
         if (timelimit != -1)
           feeder.setTimeLimit(timelimit);
         feeder.start();
+        LOG.info("Fetcher: FetchItemQueues size: {}", fetchQueues.getTotalSize());
 
         int startDelay = conf.getInt("fetcher.threads.start.delay", 10);
         for (int i = 0; i < threadCount; i++) { // spawn threads
@@ -435,6 +436,10 @@ public class Fetcher extends NutchTool implements Tool {
                 if (thread.isAlive()) {
                   LOG.warn("Thread #{} hung while processing {}", i,
                       thread.getReprUrl());
+                  StackTraceElement[] stackTrace = thread.getStackTrace();
+                  for (StackTraceElement element : stackTrace) {
+                      LOG.warn("Thread #{} hung stackTrace: {}", i, element);
+                  }
                   if (LOG.isDebugEnabled()) {
                     StackTraceElement[] stack = thread.getStackTrace();
                     StringBuilder sb = new StringBuilder();

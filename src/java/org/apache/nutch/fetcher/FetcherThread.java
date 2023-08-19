@@ -293,9 +293,10 @@ public class FetcherThread extends Thread {
           return;
         }
 
-        LOG.info("{} {} before getFetchItem DEBUG XXX1", getName(), Thread.currentThread().getId());
+        // LOG.info("{} {} before getFetchItem DEBUG XXX1", getName(), Thread.currentThread().getId());
         fit = fetchQueues.getFetchItem();
-        LOG.info("{} {} after getFetchItem DEBUG XXX1, url: {}", getName(), Thread.currentThread().getId(), fit.url);
+        // update: 这里错了，fit 可能是 null
+        // LOG.info("{} {} after getFetchItem DEBUG XXX1, url: {}", getName(), Thread.currentThread().getId(), fit.url);
 
         if (fit == null) {
           if (feeder.isAlive() || fetchQueues.getTotalSize() > 0) {
@@ -407,6 +408,7 @@ public class FetcherThread extends Thread {
                     fit.queueID, fiq.crawlDelay, fit.url);
               }
             }
+            // TODO: hint: 这里是实际请求
             ProtocolOutput output = protocol.getProtocolOutput(fit.url,
                 fit.datum);
             ProtocolStatus status = output.getStatus();
@@ -557,7 +559,8 @@ public class FetcherThread extends Thread {
       LOG.info("{} {} thread {}, activeThreads={}, DEBUGXXX outer throw error", getName(),
         Thread.currentThread().getId(), getName(), activeThreads);
       if (LOG.isErrorEnabled()) {
-        LOG.error("fetcher caught:", e);
+        LOG.error("fetcher Throwable caught:", e);
+        e.printStackTrace();
       }
     } finally {
       if (fit != null) {
@@ -912,7 +915,7 @@ public class FetcherThread extends Thread {
       }
     } catch (IOException e) {
       if (LOG.isErrorEnabled()) {
-        LOG.error("fetcher caught:", e);
+        LOG.error("fetcher caught IOException:", e);
       }
     }
 
