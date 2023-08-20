@@ -266,6 +266,8 @@ public class Fetcher extends NutchTool implements Tool {
 
         int targetBandwidth = conf.getInt("fetcher.bandwidth.target", -1)
             * 1000;
+
+        LOG.info("fetcher targetBandwidth: {}", targetBandwidth);
         int maxNumThreads = conf.getInt("fetcher.maxNum.threads", threadCount);
         if (maxNumThreads < threadCount) {
           LOG.info(
@@ -357,7 +359,8 @@ public class Fetcher extends NutchTool implements Tool {
                 averageBdwPerThread = (int) (bpsSinceLastCheck
                     / activeThreads.get());
 
-              LOG.info("averageBdwPerThread : {} kbps",
+              LOG.info("bpsSinceLastCheck: {}, averageBdwPerThread : {} kbps",
+                  (bpsSinceLastCheck / 1000),
                   (averageBdwPerThread / 1000));
 
               if (bpsSinceLastCheck < targetBandwidth
@@ -430,6 +433,10 @@ public class Fetcher extends NutchTool implements Tool {
                 if (thread.isAlive()) {
                   LOG.warn("Thread #{} hung while processing {}", i,
                       thread.getReprUrl());
+                  StackTraceElement[] stackTrace = thread.getStackTrace();
+                  for (StackTraceElement element : stackTrace) {
+                      LOG.warn("Thread #{} hung stackTrace: {}", i, element);
+                  }
                   if (LOG.isDebugEnabled()) {
                     StackTraceElement[] stack = thread.getStackTrace();
                     StringBuilder sb = new StringBuilder();

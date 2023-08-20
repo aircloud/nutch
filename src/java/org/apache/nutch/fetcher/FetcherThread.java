@@ -404,6 +404,7 @@ public class FetcherThread extends Thread {
                     fit.queueID, fiq.crawlDelay, fit.url);
               }
             }
+            // hint: 这里是实际请求
             ProtocolOutput output = protocol.getProtocolOutput(fit.url,
                 fit.datum);
             ProtocolStatus status = output.getStatus();
@@ -551,6 +552,7 @@ public class FetcherThread extends Thread {
     } catch (Throwable e) {
       if (LOG.isErrorEnabled()) {
         LOG.error("fetcher caught:", e);
+        e.printStackTrace();
       }
     } finally {
       if (fit != null) {
@@ -905,7 +907,7 @@ public class FetcherThread extends Thread {
       }
     } catch (IOException e) {
       if (LOG.isErrorEnabled()) {
-        LOG.error("fetcher caught:", e);
+        LOG.error("fetcher caught IOException:", e);
       }
     }
 
