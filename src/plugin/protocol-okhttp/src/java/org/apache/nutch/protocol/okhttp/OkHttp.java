@@ -105,13 +105,15 @@ public class OkHttp extends HttpBase {
     }
     protocols.add(okhttp3.Protocol.HTTP_1_1);
 
+    LOG.info("use hf-cc okhttp builder");
     okhttp3.OkHttpClient.Builder builder = new OkHttpClient.Builder()
         .protocols(protocols) //
         .retryOnConnectionFailure(true) //
         .followRedirects(false) //
         .connectTimeout(this.timeout, TimeUnit.MILLISECONDS)
         .writeTimeout(this.timeout, TimeUnit.MILLISECONDS)
-        .readTimeout(this.timeout, TimeUnit.MILLISECONDS);
+        .readTimeout(this.timeout, TimeUnit.MILLISECONDS)
+        .callTimeout(this.timeout * 5, TimeUnit.MILLISECONDS); // 设置一个 callTimeout。callTimeout 是整个请求/响应交互的最大持续时间，它涵盖所有活动，包括 DNS 查找、TCP 连接、HTTP 数据交换等。
 
     if (!this.tlsCheckCertificate) {
       try {
