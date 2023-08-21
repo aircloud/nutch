@@ -160,6 +160,17 @@ public class Fetcher extends NutchTool implements Tool {
       return activeThreads;
     }
  
+    public static void reportMemory() {
+        Runtime runtime = Runtime.getRuntime();
+        // 计算当前已使用的内存（总内存 - 剩余内存）
+        long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+        // 计算最大可用内存
+        long maxMemory = runtime.maxMemory();
+
+        LOG.info("[Mem] Used Memory: " + usedMemory / (1024 * 1024) + " MB");
+        LOG.info("[Mem] Max Available Memory: " + maxMemory / (1024 * 1024) + " MB");
+    }
+
     private void reportStatus(Context context, FetchItemQueues fetchQueues, int pagesLastSec, int bytesLastSec)
         throws IOException {
       StringBuilder status = new StringBuilder();
@@ -304,6 +315,8 @@ public class Fetcher extends NutchTool implements Tool {
               .increment(bytesLastSec);
 
           reportStatus(innerContext, fetchQueues, pagesLastSec, bytesLastSec);
+
+          this.reportMemory();
 
           LOG.info("-activeThreads=" + activeThreads + ", spinWaiting="
               + spinWaiting.get() + ", fetchQueues.totalSize="

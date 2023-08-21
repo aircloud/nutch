@@ -128,7 +128,7 @@ public class FetcherOutputFormat extends S3FileOutputFormat<Text, NutchWritable>
           }
           SimpleDateFormat fileDate = new SimpleDateFormat("yyyyMMddHHmmss",
               Locale.US);
-          fileDate.setTimeZone(TimeZone.getTimeZone("GMT"));
+          fileDate.setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
           conf.set("warc.export.date", fileDate.format(new Date(startTime)));
           conf.set("warc.export.date.end", fileDate.format(new Date(endTime)));
 

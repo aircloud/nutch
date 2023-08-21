@@ -114,7 +114,7 @@ class WarcRecordWriter extends RecordWriter<Text, WarcCapture> {
 
     SimpleDateFormat fileDate = new SimpleDateFormat("yyyyMMddHHmmss",
         Locale.US);
-    fileDate.setTimeZone(TimeZone.getTimeZone("GMT"));
+    fileDate.setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
 
     String prefix = conf.get("warc.export.prefix", "NUTCH-CRAWL");
 
