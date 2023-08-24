@@ -386,9 +386,11 @@ public class Generator extends NutchTool implements Tool {
       Job job = Job.getInstance(conf);
       limit = conf.getLong(GENERATOR_TOP_N, Long.MAX_VALUE)
           / job.getNumReduceTasks();
-      maxNumSegments = conf.getInt(GENERATOR_MAX_NUM_SEGMENTS, 1);
+      maxNumSegments = conf.getInt(GENERATOR_MAX_NUM_SEGMENTS, 3);
+      LOG.info("params maxNumSegments: {}", maxNumSegments);
       segCounts = new int[maxNumSegments];
       maxCount = conf.getInt(GENERATOR_MAX_COUNT, -1);
+      LOG.info("params maxCount: {}", maxCount);
       if (maxCount == -1) {
         byDomain = false;
       }
@@ -440,7 +442,7 @@ public class Generator extends NutchTool implements Tool {
             if (maxCountExpr != null) {
               try {
                 long variableMaxCount = Math.round((double)maxCountExpr.execute(createContext(host)));
-                LOG.debug("Generator: variable maxCount: {} for {}", variableMaxCount, hostname);
+                LOG.info("Generator: variable maxCount: {} for {}", variableMaxCount, hostname);
                 maxCount = (int)variableMaxCount;
               } catch (Exception e) {
                 LOG.error("Unable to execute variable maxCount expression because: " + e.getMessage(), e);
