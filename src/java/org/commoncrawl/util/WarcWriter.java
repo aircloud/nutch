@@ -181,8 +181,9 @@ public class WarcWriter {
     extra.put(WARC_TARGET_URI, targetUri.toASCIIString());
 
     URI recordId = getRecordId();
-    writeRecord(WARC_REQUEST, date, "application/http; msgtype=request",
-        recordId, extra, block);
+    // request 我们用不到，目前直接跳过写入了
+    // writeRecord(WARC_REQUEST, date, "application/http; msgtype=request",
+    //     recordId, extra, block);
     return recordId;
   }
 
