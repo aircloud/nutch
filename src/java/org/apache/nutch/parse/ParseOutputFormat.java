@@ -281,6 +281,7 @@ public class ParseOutputFormat extends OutputFormat<Text, Parse> {
                 refreshTime < Fetcher.PERM_REFRESH_TIME);
             CrawlDatum newDatum = new CrawlDatum();
             newDatum.setStatus(CrawlDatum.STATUS_LINKED);
+            newDatum.setParentLink(fromUrl);
             if (reprUrl != null && !reprUrl.equals(newUrl)) {
               newDatum.getMetaData().put(Nutch.WRITABLE_REPR_URL_KEY,
                   new Text(reprUrl));
@@ -314,6 +315,7 @@ public class ParseOutputFormat extends OutputFormat<Text, Parse> {
           }
 
           CrawlDatum target = new CrawlDatum(CrawlDatum.STATUS_LINKED, interval);
+          target.setParentLink(fromUrl);
           Text targetUrl = new Text(toUrl);
 
           // see if the outlink has any metadata attached

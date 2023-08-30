@@ -34,6 +34,7 @@ import org.apache.nutch.metadata.Nutch;
 import org.apache.nutch.scoring.ScoringFilterException;
 import org.apache.nutch.scoring.ScoringFilters;
 import org.apache.nutch.util.StringUtil;
+import org.apache.nutch.tools.ParentURLSelector;
 
 /** Merge new page entries with existing entries. */
 public class CrawlDbReducer extends
@@ -198,6 +199,16 @@ public class CrawlDbReducer extends
     case CrawlDatum.STATUS_LINKED: // it was link
       if (oldSet) { // if old exists
         result.set(old); // use it
+        try {
+          String newParentLink = ParentURLSelector.selectParentURL(key.toString(), old.getParentLink(), fetch.getParentLink());
+          if (!newParentLink.equals(old.getParentLink())) {
+              LOG.info("reduce set new ParentURL to: {}", key, newParentLink);
+              result.setParentLink(newParentLink);
+          }
+        } catch (Throwable e) {
+          LOG.error("selectParentURL for url {} get error: {}",
+              key, e.getMessage());
+        }
       } else {
         result = schedule.initializeSchedule(key, result);
         result.setStatus(CrawlDatum.STATUS_DB_UNFETCHED);

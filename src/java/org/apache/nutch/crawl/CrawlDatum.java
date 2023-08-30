@@ -141,6 +141,8 @@ public class CrawlDatum implements WritableComparable<CrawlDatum>, Cloneable {
   private int fetchInterval;
   private float score = 0.0f;
   private byte[] signature = null;
+  String defaultParentLink = "";
+  private byte[] parentLink = defaultParentLink.getBytes();
   private long modifiedTime;
   private org.apache.hadoop.io.MapWritable metaData;
 
@@ -257,6 +259,15 @@ public class CrawlDatum implements WritableComparable<CrawlDatum>, Cloneable {
     return signature;
   }
 
+  public void setParentLink(String defaultParentLink) {
+      parentLink = defaultParentLink.getBytes();
+  }
+
+  public String getParentLink() {
+    if (parentLink == null) return "";
+    return new String(parentLink);
+  }
+
   public void setSignature(byte[] signature) {
     if (signature != null && signature.length > 256)
       throw new RuntimeException("Max signature length (256) exceeded: "
@@ -326,6 +337,14 @@ public class CrawlDatum implements WritableComparable<CrawlDatum>, Cloneable {
         signature = null;
     }
 
+    int ccnt = in.readInt();
+
+    if (ccnt > 0) {
+      parentLink = new byte[ccnt];
+      in.readFully(parentLink);
+    } else
+      parentLink = null;
+
     if (version > 3) {
       boolean hasMetadata = false;
       if (version < 7) {
@@ -376,6 +395,13 @@ public class CrawlDatum implements WritableComparable<CrawlDatum>, Cloneable {
       out.writeByte(signature.length);
       out.write(signature);
     }
+    if (parentLink == null) {
+      out.writeInt(0);
+    } else {
+      out.writeInt(parentLink.length);
+      out.write(parentLink);
+    }
+
     if (metaData != null && metaData.size() > 0) {
       out.writeBoolean(true);
       metaData.write(out);
@@ -394,6 +420,7 @@ public class CrawlDatum implements WritableComparable<CrawlDatum>, Cloneable {
     this.retries = that.retries;
     this.fetchInterval = that.fetchInterval;
     this.score = that.score;
+    this.parentLink = that.parentLink;
     this.modifiedTime = that.modifiedTime;
     this.signature = that.signature;
     if (that.metaData != null) {
@@ -491,6 +518,7 @@ public class CrawlDatum implements WritableComparable<CrawlDatum>, Cloneable {
         + (getFetchInterval() / FetchSchedule.SECONDS_PER_DAY) + " days)\n");
     buf.append("Score: " + getScore() + "\n");
     buf.append("Signature: " + StringUtil.toHexString(getSignature()) + "\n");
+    buf.append("ParentLink: " + getParentLink() + "\n");
     buf.append("Metadata: \n ");
     if (metaData != null) {
       for (Entry<Writable, Writable> e : metaData.entrySet()) {
@@ -572,7 +600,8 @@ public class CrawlDatum implements WritableComparable<CrawlDatum>, Cloneable {
       jcontext.set("interval", Integer.valueOf(getFetchInterval()));
       jcontext.set("score", getScore());
       jcontext.set("signature", StringUtil.toHexString(getSignature()));
-            
+      jcontext.set("parentlink", getParentLink());
+
       // Set metadata variables
       for (Map.Entry<Writable, Writable> entry : getMetaData().entrySet()) {
         Object value = entry.getValue();
